@@ -31,41 +31,8 @@ interface Customer {
 }
 
 const CustomerManagement = () => {
-  const [customers, setCustomers] = useState<Customer[]>([
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      phone: "+1 (555) 123-4567",
-      serviceBooked: "Hair Styling",
-      totalAppointments: 12,
-      totalSpent: 1200,
-      status: "active",
-      joinDate: "2024-01-15"
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      email: "mike@example.com",
-      phone: "+1 (555) 234-5678",
-      serviceBooked: "Massage Therapy",
-      totalAppointments: 8,
-      totalSpent: 800,
-      status: "active",
-      joinDate: "2024-02-20"
-    },
-    {
-      id: 3,
-      name: "Emily Davis",
-      email: "emily@example.com",
-      phone: "+1 (555) 345-6789",
-      serviceBooked: "Manicure",
-      totalAppointments: 15,
-      totalSpent: 900,
-      status: "active",
-      joinDate: "2024-01-08"
-    }
-  ]);
+  // Start with empty customers - user will add real data
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddingCustomer, setIsAddingCustomer] = useState(false);
@@ -212,61 +179,73 @@ const CustomerManagement = () => {
           <CardTitle>Customer List</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredCustomers.map((customer) => (
-              <div key={customer.id} className="p-4 bg-muted rounded-lg">
-                <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
-                  <div className="lg:col-span-2">
-                    <h3 className="font-semibold">{customer.name}</h3>
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <Mail className="h-3 w-3" />
-                      <span>{customer.email}</span>
+          {filteredCustomers.length > 0 ? (
+            <div className="space-y-4">
+              {filteredCustomers.map((customer) => (
+                <div key={customer.id} className="p-4 bg-muted rounded-lg">
+                  <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
+                    <div className="lg:col-span-2">
+                      <h3 className="font-semibold">{customer.name}</h3>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Mail className="h-3 w-3" />
+                        <span>{customer.email}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Phone className="h-3 w-3" />
+                        <span>{customer.phone}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <Phone className="h-3 w-3" />
-                      <span>{customer.phone}</span>
+                    
+                    <div className="text-center">
+                      <p className="font-medium">{customer.serviceBooked}</p>
+                      <p className="text-sm text-muted-foreground">Service</p>
                     </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="font-medium">{customer.serviceBooked}</p>
-                    <p className="text-sm text-muted-foreground">Service</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="font-medium">{customer.totalAppointments}</p>
-                    <p className="text-sm text-muted-foreground">Appointments</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="font-medium">${customer.totalSpent}</p>
-                    <p className="text-sm text-muted-foreground">Total Spent</p>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2">
-                    <Badge variant={customer.status === "active" ? "default" : "secondary"}>
-                      {customer.status}
-                    </Badge>
-                    <div className="flex space-x-1">
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleDeleteCustomer(customer.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
+                    
+                    <div className="text-center">
+                      <p className="font-medium">{customer.totalAppointments}</p>
+                      <p className="text-sm text-muted-foreground">Appointments</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="font-medium">${customer.totalSpent}</p>
+                      <p className="text-sm text-muted-foreground">Total Spent</p>
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2">
+                      <Badge variant={customer.status === "active" ? "default" : "secondary"}>
+                        {customer.status}
+                      </Badge>
+                      <div className="flex space-x-1">
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteCustomer(customer.id)}
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-muted-foreground">
+              <div className="text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No customers found</p>
+                <p className="text-sm">
+                  {searchTerm ? "Try a different search term" : "Click 'Add Customer' to add your first customer"}
+                </p>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

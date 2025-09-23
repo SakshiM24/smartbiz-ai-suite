@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -13,57 +14,45 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 
 const DashboardOverview = () => {
-  // Mock data for demonstration
-  const stats = [
+  // Real-time stats (starts with zero)
+  const [stats, setStats] = useState([
     {
       title: "Total Customers",
-      value: "284",
-      change: "+12%",
+      value: "0",
+      change: "0%",
       trend: "up",
       icon: Users,
       color: "text-primary"
     },
     {
       title: "This Month Revenue",
-      value: "$12,456",
-      change: "+8.2%",
+      value: "$0",
+      change: "0%",
       trend: "up",
       icon: DollarSign,
       color: "text-success"
     },
     {
       title: "Appointments Today",
-      value: "18",
-      change: "+3",
+      value: "0",
+      change: "0",
       trend: "up",
       icon: Calendar,
       color: "text-accent"
     },
     {
       title: "Completion Rate",
-      value: "94.2%",
-      change: "+2.1%",
+      value: "0%",
+      change: "0%",
       trend: "up",
       icon: CheckCircle,
       color: "text-warning"
     }
-  ];
+  ]);
 
-  const salesData = [
-    { month: "Jan", revenue: 8400, customers: 45 },
-    { month: "Feb", revenue: 9200, customers: 52 },
-    { month: "Mar", revenue: 10100, customers: 58 },
-    { month: "Apr", revenue: 11200, customers: 64 },
-    { month: "May", revenue: 10800, customers: 61 },
-    { month: "Jun", revenue: 12456, customers: 68 }
-  ];
-
-  const recentAppointments = [
-    { id: 1, customer: "Sarah Johnson", service: "Hair Cut", time: "10:00 AM", status: "confirmed" },
-    { id: 2, customer: "Mike Chen", service: "Massage Therapy", time: "11:30 AM", status: "pending" },
-    { id: 3, customer: "Emily Davis", service: "Manicure", time: "2:00 PM", status: "confirmed" },
-    { id: 4, customer: "David Wilson", service: "Consultation", time: "3:30 PM", status: "confirmed" }
-  ];
+  // Empty data for real user data
+  const [salesData, setSalesData] = useState([]);
+  const [recentAppointments, setRecentAppointments] = useState([]);
 
   const businessName = localStorage.getItem("businessName") || "Your Business";
 
@@ -112,21 +101,31 @@ const DashboardOverview = () => {
             <CardTitle>Revenue Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: "hsl(var(--primary))" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {salesData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--primary))" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                <div className="text-center">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No revenue data yet</p>
+                  <p className="text-sm">Start recording sales to see your revenue trend</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -136,15 +135,25 @@ const DashboardOverview = () => {
             <CardTitle>Customer Growth</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="customers" fill="hsl(var(--accent))" />
-              </BarChart>
-            </ResponsiveContainer>
+            {salesData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="customers" fill="hsl(var(--accent))" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                <div className="text-center">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No customer data yet</p>
+                  <p className="text-sm">Add customers to track your growth</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -160,29 +169,38 @@ const DashboardOverview = () => {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentAppointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{appointment.customer}</p>
-                      <p className="text-sm text-muted-foreground">{appointment.service}</p>
+            {recentAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {recentAppointments.map((appointment) => (
+                  <div key={appointment.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{appointment.customer}</p>
+                        <p className="text-sm text-muted-foreground">{appointment.service}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{appointment.time}</p>
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                        appointment.status === 'confirmed' 
+                          ? 'bg-success/10 text-success' 
+                          : 'bg-warning/10 text-warning'
+                      }`}>
+                        {appointment.status}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{appointment.time}</p>
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                      appointment.status === 'confirmed' 
-                        ? 'bg-success/10 text-success' 
-                        : 'bg-warning/10 text-warning'
-                    }`}>
-                      {appointment.status}
-                    </span>
-                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 text-muted-foreground">
+                <div className="text-center">
+                  <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No appointments today</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

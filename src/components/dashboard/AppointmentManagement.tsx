@@ -31,40 +31,8 @@ interface Appointment {
 }
 
 const AppointmentManagement = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: 1,
-      customerName: "Sarah Johnson",
-      customerEmail: "sarah@example.com",
-      service: "Hair Styling",
-      date: "2024-12-20",
-      time: "10:00",
-      duration: 60,
-      status: "confirmed",
-      notes: "Regular customer, prefers morning appointments"
-    },
-    {
-      id: 2,
-      customerName: "Mike Chen",
-      customerEmail: "mike@example.com",
-      service: "Massage Therapy",
-      date: "2024-12-20",
-      time: "14:30",
-      duration: 90,
-      status: "pending",
-      notes: "First time customer"
-    },
-    {
-      id: 3,
-      customerName: "Emily Davis",
-      customerEmail: "emily@example.com",
-      service: "Manicure",
-      date: "2024-12-21",
-      time: "11:00",
-      duration: 45,
-      status: "confirmed"
-    }
-  ]);
+  // Start with empty appointments - user will add real data
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   const [isAddingAppointment, setIsAddingAppointment] = useState(false);
   const [newAppointment, setNewAppointment] = useState({
@@ -313,74 +281,84 @@ const AppointmentManagement = () => {
           <CardTitle>All Appointments</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {appointments
-              .sort((a, b) => new Date(a.date + ' ' + a.time).getTime() - new Date(b.date + ' ' + b.time).getTime())
-              .map((appointment) => (
-              <div key={appointment.id} className="p-4 bg-muted rounded-lg">
-                <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
-                  <div className="lg:col-span-2">
-                    <h3 className="font-semibold">{appointment.customerName}</h3>
-                    <p className="text-sm text-muted-foreground">{appointment.customerEmail}</p>
-                    <p className="text-sm font-medium text-primary">{appointment.service}</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
-                    <p className="text-sm text-muted-foreground">Date</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="font-medium">{appointment.time}</p>
-                    <p className="text-sm text-muted-foreground">{appointment.duration}m</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="flex items-center justify-center space-x-2">
-                      {getStatusIcon(appointment.status)}
-                      <Badge className={getStatusColor(appointment.status)}>
-                        {appointment.status}
-                      </Badge>
+          {appointments.length > 0 ? (
+            <div className="space-y-4">
+              {appointments
+                .sort((a, b) => new Date(a.date + ' ' + a.time).getTime() - new Date(b.date + ' ' + b.time).getTime())
+                .map((appointment) => (
+                <div key={appointment.id} className="p-4 bg-muted rounded-lg">
+                  <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
+                    <div className="lg:col-span-2">
+                      <h3 className="font-semibold">{appointment.customerName}</h3>
+                      <p className="text-sm text-muted-foreground">{appointment.customerEmail}</p>
+                      <p className="text-sm font-medium text-primary">{appointment.service}</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
+                      <p className="text-sm text-muted-foreground">Date</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="font-medium">{appointment.time}</p>
+                      <p className="text-sm text-muted-foreground">{appointment.duration}m</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        {getStatusIcon(appointment.status)}
+                        <Badge className={getStatusColor(appointment.status)}>
+                          {appointment.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2">
+                      <Select 
+                        value={appointment.status} 
+                        onValueChange={(value) => updateAppointmentStatus(appointment.id, value as Appointment["status"])}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="confirmed">Confirmed</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => deleteAppointment(appointment.id)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex justify-end space-x-2">
-                    <Select 
-                      value={appointment.status} 
-                      onValueChange={(value) => updateAppointmentStatus(appointment.id, value as Appointment["status"])}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="sm">
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => deleteAppointment(appointment.id)}
-                    >
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
-                  </div>
+                  {appointment.notes && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Notes:</strong> {appointment.notes}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                {appointment.notes && (
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Notes:</strong> {appointment.notes}
-                    </p>
-                  </div>
-                )}
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-32 text-muted-foreground">
+              <div className="text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No appointments scheduled</p>
+                <p className="text-sm">Click "Schedule Appointment" to add your first appointment</p>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

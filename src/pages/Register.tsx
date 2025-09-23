@@ -14,6 +14,9 @@ const Register = () => {
     lastName: "",
     email: "",
     businessName: "",
+    businessId: "",
+    aadharNumber: "",
+    panNumber: "",
     password: "",
     confirmPassword: ""
   });
@@ -106,6 +109,44 @@ const Register = () => {
                 onChange={handleChange}
                 required
               />
+            </div>
+            <div>
+              <Label htmlFor="businessId">Business ID</Label>
+              <Input
+                id="businessId"
+                name="businessId"
+                placeholder="Business Registration ID"
+                value={formData.businessId}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="aadharNumber">Aadhar Number</Label>
+                <Input
+                  id="aadharNumber"
+                  name="aadharNumber"
+                  placeholder="XXXX XXXX XXXX"
+                  value={formData.aadharNumber}
+                  onChange={handleChange}
+                  maxLength={14}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="panNumber">PAN Number</Label>
+                <Input
+                  id="panNumber"
+                  name="panNumber"
+                  placeholder="ABCDE1234F"
+                  value={formData.panNumber}
+                  onChange={handleChange}
+                  maxLength={10}
+                  style={{ textTransform: 'uppercase' }}
+                  required
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="email">Email</Label>

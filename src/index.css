@@ -17,35 +17,35 @@ All colors MUST be HSL for consistency and theming.
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Vibrant gradient primary colors */
-    --primary: 237 94% 66%;
+    /* Electric vibrant primary colors */
+    --primary: 280 100% 70%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 237 94% 60%;
-    --primary-glow: 237 94% 80%;
+    --primary-hover: 280 100% 65%;
+    --primary-glow: 280 100% 85%;
 
-    /* Enhanced secondary with warmth */
-    --secondary: 215 25% 95%;
-    --secondary-foreground: 222 30% 25%;
+    /* Warm secondary with orange tint */
+    --secondary: 25 95% 88%;
+    --secondary-foreground: 25 85% 25%;
 
-    --muted: 215 25% 94%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 25 45% 92%;
+    --muted-foreground: 25 25% 45%;
 
-    /* Stunning accent colors */
-    --accent: 305 85% 70%;
+    /* Stunning electric accent colors */
+    --accent: 320 100% 75%;
     --accent-foreground: 0 0% 100%;
-    --accent-glow: 305 85% 85%;
+    --accent-glow: 320 100% 90%;
 
-    /* Enhanced success with glow */
-    --success: 142 70% 50%;
+    /* Vibrant success with electric green */
+    --success: 150 100% 45%;
     --success-foreground: 0 0% 100%;
-    --success-glow: 142 70% 70%;
+    --success-glow: 150 100% 70%;
 
-    /* Enhanced warning */
-    --warning: 38 92% 60%;
+    /* Electric warning */
+    --warning: 45 100% 60%;
     --warning-foreground: 0 0% 100%;
 
-    /* Enhanced info color */
-    --info: 199 89% 55%;
+    /* Cyan info color */
+    --info: 190 100% 60%;
     --info-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -57,18 +57,21 @@ All colors MUST be HSL for consistency and theming.
 
     --radius: 0.75rem;
 
-    /* Beautiful gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, hsl(var(--info)) 100%);
+    /* Electric vibrant gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--info)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 30%, hsl(var(--info)) 60%, hsl(var(--success)) 100%);
     --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(var(--success-glow)));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100% / 0.8), hsl(215 25% 98%));
-    --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.1), hsl(0 0% 100% / 0.05));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100% / 0.95), hsl(25 45% 98%));
+    --gradient-glass: linear-gradient(145deg, hsl(280 100% 70% / 0.1), hsl(320 100% 75% / 0.05));
+    --gradient-electric: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--warning)), hsl(var(--success)));
+    --gradient-neon: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--info)), hsl(var(--accent)));
 
-    /* Enhanced shadows and glows */
-    --shadow-elegant: 0 20px 40px -12px hsl(var(--primary) / 0.25);
-    --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.4);
-    --shadow-accent: 0 10px 30px -8px hsl(var(--accent) / 0.3);
-    --shadow-success: 0 10px 25px -8px hsl(var(--success) / 0.3);
+    /* Enhanced shadows and electric glows */
+    --shadow-elegant: 0 25px 50px -12px hsl(var(--primary) / 0.4);
+    --shadow-glow: 0 0 80px hsl(var(--primary-glow) / 0.6);
+    --shadow-accent: 0 15px 40px -8px hsl(var(--accent) / 0.5);
+    --shadow-success: 0 15px 35px -8px hsl(var(--success) / 0.5);
+    --shadow-neon: 0 0 100px hsl(var(--primary) / 0.8), 0 0 200px hsl(var(--accent) / 0.4);
 
     /* Smooth transitions */
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);

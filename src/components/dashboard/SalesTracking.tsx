@@ -31,52 +31,40 @@ import {
 const SalesTracking = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("monthly");
 
-  // Mock sales data
-  const dailyData = [
-    { date: "Dec 14", revenue: 450, transactions: 8 },
-    { date: "Dec 15", revenue: 680, transactions: 12 },
-    { date: "Dec 16", revenue: 520, transactions: 9 },
-    { date: "Dec 17", revenue: 750, transactions: 15 },
-    { date: "Dec 18", revenue: 620, transactions: 11 },
-    { date: "Dec 19", revenue: 890, transactions: 16 },
-    { date: "Dec 20", revenue: 720, transactions: 13 }
-  ];
-
-  const weeklyData = [
-    { week: "Week 1", revenue: 3200, transactions: 58 },
-    { week: "Week 2", revenue: 3800, transactions: 67 },
-    { week: "Week 3", revenue: 4100, transactions: 72 },
-    { week: "Week 4", revenue: 3600, transactions: 61 }
-  ];
-
-  const monthlyData = [
-    { month: "Jul", revenue: 8400, transactions: 156, customers: 45 },
-    { month: "Aug", revenue: 9200, transactions: 168, customers: 52 },
-    { month: "Sep", revenue: 10100, transactions: 184, customers: 58 },
-    { month: "Oct", revenue: 11200, transactions: 198, customers: 64 },
-    { month: "Nov", revenue: 10800, transactions: 192, customers: 61 },
-    { month: "Dec", revenue: 12456, transactions: 215, customers: 68 }
-  ];
-
-  const serviceData = [
-    { name: "Hair Styling", value: 35, revenue: 4200, color: "hsl(var(--primary))" },
-    { name: "Massage", value: 25, revenue: 3000, color: "hsl(var(--success))" },
-    { name: "Manicure", value: 20, revenue: 2400, color: "hsl(var(--accent))" },
-    { name: "Facial", value: 15, revenue: 1800, color: "hsl(var(--warning))" },
-    { name: "Other", value: 5, revenue: 600, color: "hsl(var(--muted-foreground))" }
-  ];
-
-  const recentTransactions = [
-    { id: 1, customer: "Sarah Johnson", service: "Hair Styling", amount: 85, date: "2024-12-20", status: "paid" },
-    { id: 2, customer: "Mike Chen", service: "Massage", amount: 120, date: "2024-12-20", status: "paid" },
-    { id: 3, customer: "Emily Davis", service: "Manicure", amount: 45, date: "2024-12-19", status: "pending" },
-    { id: 4, customer: "David Wilson", service: "Consultation", amount: 0, date: "2024-12-19", status: "completed" },
-    { id: 5, customer: "Lisa Brown", service: "Facial", amount: 75, date: "2024-12-18", status: "paid" }
-  ];
+  // Real data - starts empty
+  const [dailyData, setDailyData] = useState([]);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [serviceData, setServiceData] = useState([]);
+  const [recentTransactions, setRecentTransactions] = useState([]);
 
   const totalRevenue = monthlyData.reduce((sum, month) => sum + month.revenue, 0);
   const totalTransactions = monthlyData.reduce((sum, month) => sum + month.transactions, 0);
-  const avgTransaction = totalRevenue / totalTransactions;
+  const avgTransaction = totalRevenue / totalTransactions || 0;
+
+  // Function to export report
+  const exportReport = () => {
+    const reportData = {
+      totalRevenue,
+      totalTransactions,
+      avgTransaction,
+      businessName: localStorage.getItem("businessName") || "Your Business",
+      generatedDate: new Date().toLocaleDateString(),
+      monthlyData,
+      serviceData,
+      recentTransactions
+    };
+
+    const dataStr = JSON.stringify(reportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `sales-report-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
 
   return (
     <div className="space-y-6">
@@ -85,7 +73,7 @@ const SalesTracking = () => {
           <h1 className="text-3xl font-bold text-foreground">Sales Analytics</h1>
           <p className="text-muted-foreground">Track your revenue and business performance</p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={exportReport}>
           <Download className="h-4 w-4 mr-2" />
           Export Report
         </Button>
@@ -98,7 +86,7 @@ const SalesTracking = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">${totalRevenue.toLocaleString() || "0"}</p>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 text-success mr-1" />
                   <span className="text-sm text-success">+12.5%</span>
@@ -146,7 +134,7 @@ const SalesTracking = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold">${monthlyData[monthlyData.length - 1].revenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">${monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].revenue.toLocaleString() : "0"}</p>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 text-success mr-1" />
                   <span className="text-sm text-success">+15.2%</span>

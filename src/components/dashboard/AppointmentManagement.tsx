@@ -1,366 +1,287 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Calendar, 
-  Plus, 
-  Clock,
-  Edit,
-  Trash2,
-  CheckCircle,
-  XCircle,
-  AlertCircle
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Plus, Calendar as CalendarIcon, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 interface Appointment {
-  id: number;
-  customerName: string;
-  customerEmail: string;
-  service: string;
-  date: string;
-  time: string;
+  id: string;
+  customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
+  service_name: string;
+  appointment_date: string;
+  appointment_time: string;
   duration: number;
-  status: "confirmed" | "pending" | "cancelled" | "completed";
+  status: string;
   notes?: string;
 }
 
 const AppointmentManagement = () => {
-  // Start with empty appointments - user will add real data
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-
-  const [isAddingAppointment, setIsAddingAppointment] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [newAppointment, setNewAppointment] = useState({
-    customerName: "",
-    customerEmail: "",
-    service: "",
-    date: "",
-    time: "",
+    customer_name: "",
+    customer_email: "",
+    customer_phone: "",
+    service_name: "",
+    appointment_date: "",
+    appointment_time: "",
     duration: 60,
-    notes: ""
+    notes: "",
   });
 
-  const { toast } = useToast();
+  useEffect(() => {
+    fetchAppointments();
+  }, [user]);
 
-  const services = [
-    "Hair Cut", "Hair Styling", "Hair Coloring", "Massage Therapy", 
-    "Manicure", "Pedicure", "Facial", "Consultation"
-  ];
+  const fetchAppointments = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('appointment_date', { ascending: true })
+      .order('appointment_time', { ascending: true });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointments",
+        variant: "destructive",
+      });
+    } else {
+      setAppointments(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleAddAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    const { error } = await supabase.from('appointments').insert({
+      ...newAppointment,
+      user_id: user.id,
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create appointment",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Appointment created successfully",
+      });
+      setIsDialogOpen(false);
+      setNewAppointment({
+        customer_name: "",
+        customer_email: "",
+        customer_phone: "",
+        service_name: "",
+        appointment_date: "",
+        appointment_time: "",
+        duration: 60,
+        notes: "",
+      });
+      fetchAppointments();
+    }
+  };
+
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from('appointments')
+      .update({ status })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update status",
+        variant: "destructive",
+      });
+    } else {
+      fetchAppointments();
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return <CheckCircle className="h-4 w-4 text-success" />;
-      case "pending":
-        return <AlertCircle className="h-4 w-4 text-warning" />;
-      case "cancelled":
-        return <XCircle className="h-4 w-4 text-destructive" />;
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-primary" />;
+      case 'confirmed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-blue-500" />;
+      case 'cancelled':
+        return <XCircle className="h-4 w-4 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-success/10 text-success";
-      case "pending":
-        return "bg-warning/10 text-warning";
-      case "cancelled":
-        return "bg-destructive/10 text-destructive";
-      case "completed":
-        return "bg-primary/10 text-primary";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const handleAddAppointment = () => {
-    if (newAppointment.customerName && newAppointment.service && newAppointment.date && newAppointment.time) {
-      const appointment: Appointment = {
-        id: appointments.length + 1,
-        ...newAppointment,
-        status: "pending"
-      };
-      
-      setAppointments([...appointments, appointment]);
-      setNewAppointment({
-        customerName: "",
-        customerEmail: "",
-        service: "",
-        date: "",
-        time: "",
-        duration: 60,
-        notes: ""
-      });
-      setIsAddingAppointment(false);
-      
-      toast({
-        title: "Appointment scheduled",
-        description: `Appointment for ${appointment.customerName} has been scheduled.`,
-      });
-    }
-  };
-
-  const updateAppointmentStatus = (id: number, newStatus: Appointment["status"]) => {
-    setAppointments(appointments.map(appointment =>
-      appointment.id === id ? { ...appointment, status: newStatus } : appointment
-    ));
-    
-    toast({
-      title: "Appointment updated",
-      description: `Status changed to ${newStatus}.`,
-    });
-  };
-
-  const deleteAppointment = (id: number) => {
-    setAppointments(appointments.filter(appointment => appointment.id !== id));
-    toast({
-      title: "Appointment deleted",
-      description: "The appointment has been successfully removed.",
-    });
-  };
-
-  const todayAppointments = appointments.filter(apt => 
-    apt.date === new Date().toISOString().split('T')[0]
-  );
-
-  const upcomingAppointments = appointments.filter(apt => 
-    apt.date > new Date().toISOString().split('T')[0]
-  );
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Appointment Management</h1>
-          <p className="text-muted-foreground">Manage your appointments and schedules</p>
+          <h1 className="text-3xl font-bold">Appointment Management</h1>
+          <p className="text-muted-foreground">Schedule and manage appointments</p>
         </div>
-        <Dialog open={isAddingAppointment} onOpenChange={setIsAddingAppointment}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Schedule Appointment
+              New Appointment
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Schedule New Appointment</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <form onSubmit={handleAddAppointment} className="space-y-4">
               <div>
-                <Label htmlFor="customerName">Customer Name</Label>
+                <Label htmlFor="customer_name">Customer Name *</Label>
                 <Input
-                  id="customerName"
-                  value={newAppointment.customerName}
-                  onChange={(e) => setNewAppointment({ ...newAppointment, customerName: e.target.value })}
-                  placeholder="Enter customer name"
+                  id="customer_name"
+                  value={newAppointment.customer_name}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, customer_name: e.target.value })}
+                  required
                 />
               </div>
               <div>
-                <Label htmlFor="customerEmail">Customer Email</Label>
+                <Label htmlFor="customer_email">Customer Email</Label>
                 <Input
-                  id="customerEmail"
+                  id="customer_email"
                   type="email"
-                  value={newAppointment.customerEmail}
-                  onChange={(e) => setNewAppointment({ ...newAppointment, customerEmail: e.target.value })}
-                  placeholder="Enter email address"
+                  value={newAppointment.customer_email}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, customer_email: e.target.value })}
                 />
               </div>
               <div>
-                <Label htmlFor="service">Service</Label>
-                <Select value={newAppointment.service} onValueChange={(value) => setNewAppointment({ ...newAppointment, service: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service) => (
-                      <SelectItem key={service} value={service}>{service}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="customer_phone">Customer Phone</Label>
+                <Input
+                  id="customer_phone"
+                  value={newAppointment.customer_phone}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, customer_phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="service_name">Service *</Label>
+                <Input
+                  id="service_name"
+                  value={newAppointment.service_name}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, service_name: e.target.value })}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="appointment_date">Date *</Label>
                   <Input
-                    id="date"
+                    id="appointment_date"
                     type="date"
-                    value={newAppointment.date}
-                    onChange={(e) => setNewAppointment({ ...newAppointment, date: e.target.value })}
+                    value={newAppointment.appointment_date}
+                    onChange={(e) => setNewAppointment({ ...newAppointment, appointment_date: e.target.value })}
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="time">Time</Label>
+                  <Label htmlFor="appointment_time">Time *</Label>
                   <Input
-                    id="time"
+                    id="appointment_time"
                     type="time"
-                    value={newAppointment.time}
-                    onChange={(e) => setNewAppointment({ ...newAppointment, time: e.target.value })}
+                    value={newAppointment.appointment_time}
+                    onChange={(e) => setNewAppointment({ ...newAppointment, appointment_time: e.target.value })}
+                    required
                   />
                 </div>
               </div>
               <div>
                 <Label htmlFor="duration">Duration (minutes)</Label>
-                <Select value={newAppointment.duration.toString()} onValueChange={(value) => setNewAppointment({ ...newAppointment, duration: parseInt(value) })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="45">45 minutes</SelectItem>
-                    <SelectItem value="60">1 hour</SelectItem>
-                    <SelectItem value="90">1.5 hours</SelectItem>
-                    <SelectItem value="120">2 hours</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  id="duration"
+                  type="number"
+                  value={newAppointment.duration}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, duration: parseInt(e.target.value) })}
+                />
               </div>
               <div>
-                <Label htmlFor="notes">Notes (optional)</Label>
+                <Label htmlFor="notes">Notes</Label>
                 <Input
                   id="notes"
                   value={newAppointment.notes}
                   onChange={(e) => setNewAppointment({ ...newAppointment, notes: e.target.value })}
-                  placeholder="Any special notes..."
                 />
               </div>
-              <Button onClick={handleAddAppointment} className="w-full">
-                Schedule Appointment
-              </Button>
-            </div>
+              <Button type="submit" className="w-full">Schedule Appointment</Button>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{todayAppointments.length}</p>
-              <p className="text-sm text-muted-foreground">Today</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{upcomingAppointments.length}</p>
-              <p className="text-sm text-muted-foreground">Upcoming</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{appointments.filter(a => a.status === "confirmed").length}</p>
-              <p className="text-sm text-muted-foreground">Confirmed</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{appointments.filter(a => a.status === "pending").length}</p>
-              <p className="text-sm text-muted-foreground">Pending</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Appointments List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Appointments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {appointments.length > 0 ? (
-            <div className="space-y-4">
-              {appointments
-                .sort((a, b) => new Date(a.date + ' ' + a.time).getTime() - new Date(b.date + ' ' + b.time).getTime())
-                .map((appointment) => (
-                <div key={appointment.id} className="p-4 bg-muted rounded-lg">
-                  <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
-                    <div className="lg:col-span-2">
-                      <h3 className="font-semibold">{appointment.customerName}</h3>
-                      <p className="text-sm text-muted-foreground">{appointment.customerEmail}</p>
-                      <p className="text-sm font-medium text-primary">{appointment.service}</p>
+      <div className="grid gap-4">
+        {appointments.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-10">
+              <p className="text-muted-foreground">No appointments scheduled. Create your first appointment!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          appointments.map((appointment) => (
+            <Card key={appointment.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(appointment.status)}
+                      <h3 className="font-semibold text-lg">{appointment.customer_name}</h3>
                     </div>
-                    
-                    <div className="text-center">
-                      <p className="font-medium">{new Date(appointment.date).toLocaleDateString()}</p>
-                      <p className="text-sm text-muted-foreground">Date</p>
-                    </div>
-                    
-                    <div className="text-center">
-                      <p className="font-medium">{appointment.time}</p>
-                      <p className="text-sm text-muted-foreground">{appointment.duration}m</p>
-                    </div>
-                    
-                    <div className="text-center">
-                      <div className="flex items-center justify-center space-x-2">
-                        {getStatusIcon(appointment.status)}
-                        <Badge className={getStatusColor(appointment.status)}>
-                          {appointment.status}
-                        </Badge>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4" />
+                        {appointment.appointment_date}
                       </div>
-                    </div>
-                    
-                    <div className="flex justify-end space-x-2">
-                      <Select 
-                        value={appointment.status} 
-                        onValueChange={(value) => updateAppointmentStatus(appointment.id, value as Appointment["status"])}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="confirmed">Confirmed</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => deleteAppointment(appointment.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        {appointment.appointment_time} ({appointment.duration} min)
+                      </div>
+                      <div className="font-medium">{appointment.service_name}</div>
                     </div>
                   </div>
-                  {appointment.notes && (
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Notes:</strong> {appointment.notes}
-                      </p>
-                    </div>
-                  )}
+                  <Select
+                    value={appointment.status}
+                    onValueChange={(value) => updateStatus(appointment.id, value)}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-32 text-muted-foreground">
-              <div className="text-center">
-                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No appointments scheduled</p>
-                <p className="text-sm">Click "Schedule Appointment" to add your first appointment</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };

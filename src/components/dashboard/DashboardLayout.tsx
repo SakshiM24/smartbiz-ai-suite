@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Bot, 
@@ -12,8 +12,9 @@ import {
   Menu,
   X
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -23,11 +24,25 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children, activeTab, setActiveTab }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [businessName, setBusinessName] = useState("My Business");
+  const { user, signOut } = useAuth();
 
-  const userName = localStorage.getItem("userName") || "Business Owner";
-  const businessName = localStorage.getItem("businessName") || "My Business";
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('business_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (data) {
+          setBusinessName(data.business_name);
+        }
+      }
+    };
+    fetchProfile();
+  }, [user]);
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home },
@@ -39,16 +54,8 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }: DashboardLayoutP
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("businessName");
-    localStorage.removeItem("userName");
-    
-    toast({
-      title: "Logged out successfully",
-      description: "See you next time!",
-    });
-    navigate("/");
+    signOut();
+    setSidebarOpen(false);
   };
 
   return (
@@ -74,7 +81,7 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }: DashboardLayoutP
             </Link>
             <div className="mt-3">
               <p className="font-semibold text-sm">{businessName}</p>
-              <p className="text-xs text-muted-foreground">{userName}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
           </div>
 
@@ -136,7 +143,7 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }: DashboardLayoutP
             </div>
             <div className="hidden lg:flex items-center space-x-4">
               <span className="text-sm text-muted-foreground">
-                Welcome back, {userName.split(' ')[0]}!
+                Welcome back!
               </span>
             </div>
           </div>

@@ -3,14 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   DollarSign, 
   TrendingUp, 
   TrendingDown,
   Calendar,
   BarChart3,
-  Download
+  Download,
+  Plus
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { 
   BarChart, 
   Bar, 
@@ -35,6 +41,17 @@ const SalesTracking = () => {
   const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState("monthly");
   const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [newSale, setNewSale] = useState({
+    customer_name: "",
+    service_id: "",
+    amount: "",
+    sale_date: new Date().toISOString().split('T')[0],
+    payment_method: "cash",
+    payment_status: "completed",
+  });
 
   const [dailyData, setDailyData] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
@@ -50,6 +67,7 @@ const SalesTracking = () => {
     if (!user) return;
 
     const fetchSalesData = async () => {
+      await Promise.all([fetchServices(), fetchCustomers()]);
       try {
         setLoading(true);
 
@@ -162,6 +180,86 @@ const SalesTracking = () => {
     fetchSalesData();
   }, [user]);
 
+  const fetchServices = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('services')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+    setServices(data || []);
+  };
+
+  const fetchCustomers = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('user_id', user.id);
+    setCustomers(data || []);
+  };
+
+  const handleAddSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    const service = services.find(s => s.id === newSale.service_id);
+    if (!service) {
+      toast({
+        title: "Error",
+        description: "Please select a service",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase.from('sales').insert({
+      user_id: user.id,
+      customer_name: newSale.customer_name,
+      service_name: service.name,
+      service_id: newSale.service_id,
+      amount: parseFloat(newSale.amount),
+      sale_date: newSale.sale_date,
+      payment_method: newSale.payment_method,
+      payment_status: newSale.payment_status,
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to record sale",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Sale recorded successfully",
+      });
+      setIsDialogOpen(false);
+      setNewSale({
+        customer_name: "",
+        service_id: "",
+        amount: "",
+        sale_date: new Date().toISOString().split('T')[0],
+        payment_method: "cash",
+        payment_status: "completed",
+      });
+      // Refresh data
+      if (user) {
+        const { data: sales } = await supabase
+          .from('sales')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('sale_date', { ascending: true });
+        
+        if (sales) {
+          // Re-process all the data similar to initial load
+          window.location.reload();
+        }
+      }
+    }
+  };
+
   // Function to export report
   const exportReport = () => {
     const reportData = {
@@ -197,10 +295,106 @@ const SalesTracking = () => {
           <h1 className="text-3xl font-bold text-foreground">Sales Analytics</h1>
           <p className="text-muted-foreground">Track your revenue and business performance</p>
         </div>
-        <Button variant="outline" onClick={exportReport}>
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Record Sale
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Record New Sale</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddSale} className="space-y-4">
+                <div>
+                  <Label htmlFor="customer_name">Customer Name *</Label>
+                  <Input
+                    id="customer_name"
+                    value={newSale.customer_name}
+                    onChange={(e) => setNewSale({ ...newSale, customer_name: e.target.value })}
+                    list="customers-list"
+                    required
+                  />
+                  <datalist id="customers-list">
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.name} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <Label htmlFor="service">Service *</Label>
+                  <Select
+                    value={newSale.service_id}
+                    onValueChange={(value) => {
+                      const service = services.find(s => s.id === value);
+                      setNewSale({
+                        ...newSale,
+                        service_id: value,
+                        amount: service?.price.toString() || "",
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.map((service) => (
+                        <SelectItem key={service.id} value={service.id}>
+                          {service.name} - ₹{service.price}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="amount">Amount (₹) *</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={newSale.amount}
+                    onChange={(e) => setNewSale({ ...newSale, amount: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sale_date">Sale Date *</Label>
+                  <Input
+                    id="sale_date"
+                    type="date"
+                    value={newSale.sale_date}
+                    onChange={(e) => setNewSale({ ...newSale, sale_date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="payment_method">Payment Method</Label>
+                  <Select
+                    value={newSale.payment_method}
+                    onValueChange={(value) => setNewSale({ ...newSale, payment_method: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="online">Online</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full">Record Sale</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" onClick={exportReport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export Report
+          </Button>
+        </div>
       </div>
 
       {/* Key Metrics */}

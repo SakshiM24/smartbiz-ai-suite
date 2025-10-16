@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import CustomerManagement from "@/components/dashboard/CustomerManagement";
 import AppointmentManagement from "@/components/dashboard/AppointmentManagement";
+import ServiceManagement from "@/components/dashboard/ServiceManagement";
 import SalesTracking from "@/components/dashboard/SalesTracking";
 import AIFeatures from "@/components/dashboard/AIFeatures";
 import ProfileManagement from "@/components/dashboard/ProfileManagement";
@@ -28,6 +29,8 @@ const Dashboard = () => {
         return <CustomerManagement />;
       case "appointments":
         return <AppointmentManagement />;
+      case "services":
+        return <ServiceManagement />;
       case "sales":
         return <SalesTracking />;
       case "ai":

@@ -28,11 +28,14 @@ const AppointmentManagement = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [services, setServices] = useState<any[]>([]);
+  const [selectedService, setSelectedService] = useState<any>(null);
   const [newAppointment, setNewAppointment] = useState({
     customer_name: "",
     customer_email: "",
     customer_phone: "",
     service_name: "",
+    service_id: "",
     appointment_date: "",
     appointment_time: "",
     duration: 60,
@@ -41,7 +44,23 @@ const AppointmentManagement = () => {
 
   useEffect(() => {
     fetchAppointments();
+    fetchServices();
   }, [user]);
+
+  const fetchServices = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('name');
+
+    if (!error) {
+      setServices(data || []);
+    }
+  };
 
   const fetchAppointments = async () => {
     if (!user) return;
@@ -91,6 +110,7 @@ const AppointmentManagement = () => {
         customer_email: "",
         customer_phone: "",
         service_name: "",
+        service_id: "",
         appointment_date: "",
         appointment_time: "",
         duration: 60,
@@ -101,6 +121,9 @@ const AppointmentManagement = () => {
   };
 
   const updateStatus = async (id: string, status: string) => {
+    const appointment = appointments.find(a => a.id === id);
+    if (!appointment) return;
+
     const { error } = await supabase
       .from('appointments')
       .update({ status })
@@ -112,9 +135,34 @@ const AppointmentManagement = () => {
         description: "Failed to update status",
         variant: "destructive",
       });
-    } else {
-      fetchAppointments();
+      return;
     }
+
+    // If marking as completed, offer to create sale
+    if (status === 'completed' && appointment.status !== 'completed') {
+      const service = services.find(s => s.name === appointment.service_name);
+      if (service) {
+        const createSale = confirm(`Create a sale record for ₹${service.price}?`);
+        if (createSale) {
+          await supabase.from('sales').insert({
+            user_id: user!.id,
+            customer_name: appointment.customer_name,
+            service_name: appointment.service_name,
+            service_id: service.id,
+            appointment_id: id,
+            amount: service.price,
+            sale_date: appointment.appointment_date,
+            payment_status: 'completed',
+          });
+          toast({
+            title: "Success",
+            description: "Sale recorded successfully",
+          });
+        }
+      }
+    }
+    
+    fetchAppointments();
   };
 
   const getStatusIcon = (status: string) => {
@@ -181,12 +229,37 @@ const AppointmentManagement = () => {
               </div>
               <div>
                 <Label htmlFor="service_name">Service *</Label>
-                <Input
-                  id="service_name"
-                  value={newAppointment.service_name}
-                  onChange={(e) => setNewAppointment({ ...newAppointment, service_name: e.target.value })}
-                  required
-                />
+                <Select
+                  value={newAppointment.service_id}
+                  onValueChange={(value) => {
+                    const service = services.find(s => s.id === value);
+                    if (service) {
+                      setSelectedService(service);
+                      setNewAppointment({
+                        ...newAppointment,
+                        service_id: value,
+                        service_name: service.name,
+                        duration: service.duration || 60,
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        {service.name} - ₹{service.price}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {services.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No services available. Create services first!
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

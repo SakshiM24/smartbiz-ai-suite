@@ -4,7 +4,8 @@ import {
   Bot, 
   Home, 
   Users, 
-  Calendar, 
+  Calendar,
+  Briefcase,
   DollarSign, 
   TrendingUp, 
   User, 
@@ -48,6 +49,7 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }: DashboardLayoutP
     { id: "overview", label: "Overview", icon: Home },
     { id: "customers", label: "Customers", icon: Users },
     { id: "appointments", label: "Appointments", icon: Calendar },
+    { id: "services", label: "Services", icon: Briefcase },
     { id: "sales", label: "Sales", icon: DollarSign },
     { id: "ai", label: "AI Features", icon: TrendingUp },
     { id: "profile", label: "Profile", icon: User }

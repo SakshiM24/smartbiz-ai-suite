@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,11 +27,15 @@ import {
   Area,
   AreaChart
 } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, subMonths } from "date-fns";
 
 const SalesTracking = () => {
+  const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState("monthly");
+  const [loading, setLoading] = useState(true);
 
-  // Real data - starts empty
   const [dailyData, setDailyData] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
@@ -41,6 +45,122 @@ const SalesTracking = () => {
   const totalRevenue = monthlyData.reduce((sum, month) => sum + month.revenue, 0);
   const totalTransactions = monthlyData.reduce((sum, month) => sum + month.transactions, 0);
   const avgTransaction = totalRevenue / totalTransactions || 0;
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchSalesData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch all sales for the user
+        const { data: sales, error } = await supabase
+          .from('sales')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('sale_date', { ascending: true });
+
+        if (error) throw error;
+
+        if (!sales || sales.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        // Process daily data (last 30 days)
+        const last30Days = eachDayOfInterval({
+          start: subMonths(new Date(), 1),
+          end: new Date()
+        });
+
+        const dailyRevenue = last30Days.map(day => {
+          const dayStr = format(day, 'yyyy-MM-dd');
+          const daySales = sales.filter(s => s.sale_date === dayStr);
+          return {
+            date: format(day, 'MMM dd'),
+            revenue: daySales.reduce((sum, s) => sum + Number(s.amount), 0),
+            transactions: daySales.length
+          };
+        });
+        setDailyData(dailyRevenue);
+
+        // Process weekly data (last 12 weeks)
+        const last12Weeks = eachWeekOfInterval({
+          start: subMonths(new Date(), 3),
+          end: new Date()
+        });
+
+        const weeklyRevenue = last12Weeks.map((week, idx) => {
+          const weekStart = format(week, 'yyyy-MM-dd');
+          const weekSales = sales.filter(s => {
+            const saleWeek = format(new Date(s.sale_date), 'yyyy-MM-dd');
+            return saleWeek >= weekStart && saleWeek < format(new Date(week.getTime() + 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+          });
+          return {
+            week: `W${idx + 1}`,
+            revenue: weekSales.reduce((sum, s) => sum + Number(s.amount), 0),
+            transactions: weekSales.length
+          };
+        });
+        setWeeklyData(weeklyRevenue);
+
+        // Process monthly data (last 12 months)
+        const last12Months = eachMonthOfInterval({
+          start: subMonths(new Date(), 11),
+          end: new Date()
+        });
+
+        const monthlyRevenue = last12Months.map(month => {
+          const monthStr = format(month, 'yyyy-MM');
+          const monthSales = sales.filter(s => s.sale_date?.startsWith(monthStr));
+          return {
+            month: format(month, 'MMM yyyy'),
+            revenue: monthSales.reduce((sum, s) => sum + Number(s.amount), 0),
+            transactions: monthSales.length
+          };
+        });
+        setMonthlyData(monthlyRevenue);
+
+        // Process service breakdown
+        const serviceRevenue: Record<string, number> = {};
+        sales.forEach(sale => {
+          if (!serviceRevenue[sale.service_name]) {
+            serviceRevenue[sale.service_name] = 0;
+          }
+          serviceRevenue[sale.service_name] += Number(sale.amount);
+        });
+
+        const totalServiceRevenue = Object.values(serviceRevenue).reduce((sum: number, val) => sum + Number(val), 0);
+        const colors = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
+        
+        const serviceBreakdown = Object.entries(serviceRevenue).map(([name, revenue], idx) => ({
+          name,
+          revenue: Number(revenue).toFixed(0),
+          value: totalServiceRevenue > 0 ? ((Number(revenue) / totalServiceRevenue) * 100).toFixed(1) : 0,
+          color: colors[idx % colors.length]
+        }));
+        setServiceData(serviceBreakdown);
+
+        // Recent transactions (last 10)
+        const recent = sales.slice(-10).reverse().map(sale => ({
+          id: sale.id,
+          customer: sale.customer_name,
+          service: sale.service_name,
+          amount: Number(sale.amount),
+          date: format(new Date(sale.sale_date), 'MMM dd, yyyy'),
+          status: sale.payment_status || 'completed'
+        }));
+        setRecentTransactions(recent);
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchSalesData();
+  }, [user]);
 
   // Function to export report
   const exportReport = () => {
@@ -66,6 +186,10 @@ const SalesTracking = () => {
     linkElement.click();
   };
 
+  if (loading) {
+    return <div className="text-center py-10">Loading sales data...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -86,7 +210,7 @@ const SalesTracking = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toLocaleString() || "0"}</p>
+                <p className="text-2xl font-bold">₹{totalRevenue.toLocaleString() || "0"}</p>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 text-success mr-1" />
                   <span className="text-sm text-success">+12.5%</span>
@@ -118,7 +242,7 @@ const SalesTracking = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg Transaction</p>
-                <p className="text-2xl font-bold">${avgTransaction.toFixed(0)}</p>
+                <p className="text-2xl font-bold">₹{avgTransaction.toFixed(0)}</p>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 text-success mr-1" />
                   <span className="text-sm text-success">+3.7%</span>
@@ -134,7 +258,7 @@ const SalesTracking = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold">${monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].revenue.toLocaleString() : "0"}</p>
+                <p className="text-2xl font-bold">₹{monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].revenue.toLocaleString() : "0"}</p>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="h-4 w-4 text-success mr-1" />
                   <span className="text-sm text-success">+15.2%</span>
@@ -216,7 +340,7 @@ const SalesTracking = () => {
                     <span className="text-sm">{service.name}</span>
                   </div>
                   <div className="text-sm font-medium">
-                    ${service.revenue} ({service.value}%)
+                    ₹{service.revenue} ({service.value}%)
                   </div>
                 </div>
               ))}
@@ -232,7 +356,10 @@ const SalesTracking = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentTransactions.map((transaction) => (
+            {recentTransactions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No transactions yet. Add your first sale!</p>
+            ) : (
+              recentTransactions.map((transaction) => (
               <div key={transaction.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div>
@@ -242,7 +369,7 @@ const SalesTracking = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-medium">
-                    {transaction.amount > 0 ? `$${transaction.amount}` : "Free"}
+                    {transaction.amount > 0 ? `₹${transaction.amount}` : "Free"}
                   </p>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-muted-foreground">{transaction.date}</span>
@@ -257,7 +384,8 @@ const SalesTracking = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         </CardContent>
       </Card>

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
-import CustomerManagement from "@/components/dashboard/CustomerManagement";
 import AppointmentManagement from "@/components/dashboard/AppointmentManagement";
 import ServiceManagement from "@/components/dashboard/ServiceManagement";
 import SalesTracking from "@/components/dashboard/SalesTracking";
@@ -25,8 +24,6 @@ const Dashboard = () => {
     switch (activeTab) {
       case "overview":
         return <DashboardOverview />;
-      case "customers":
-        return <CustomerManagement />;
       case "appointments":
         return <AppointmentManagement />;
       case "services":

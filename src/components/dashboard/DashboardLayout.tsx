@@ -3,15 +3,13 @@ import { Button } from "@/components/ui/button";
 import { 
   Bot, 
   Home, 
-  Users, 
   Calendar,
   Briefcase,
   DollarSign, 
   TrendingUp, 
   User, 
   LogOut, 
-  Menu,
-  X
+  Menu
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,11 +45,10 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }: DashboardLayoutP
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home },
-    { id: "customers", label: "Customers", icon: Users },
     { id: "appointments", label: "Appointments", icon: Calendar },
     { id: "services", label: "Services", icon: Briefcase },
     { id: "sales", label: "Sales", icon: DollarSign },
-    { id: "ai", label: "AI Features", icon: TrendingUp },
+    { id: "ai", label: "AI Insights", icon: TrendingUp },
     { id: "profile", label: "Profile", icon: User }
   ];
 

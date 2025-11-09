@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,24 +21,70 @@ import {
   Palette
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const ProfileManagement = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    firstName: localStorage.getItem("userName")?.split(" ")[0] || "John",
-    lastName: localStorage.getItem("userName")?.split(" ")[1] || "Doe",
-    email: localStorage.getItem("userEmail") || "john@business.com",
-    phone: "+1 (555) 123-4567",
-    businessName: localStorage.getItem("businessName") || "My Business",
-    businessType: "Hair Salon",
-    address: "123 Main Street, City, State 12345",
-    description: "A modern salon offering premium hair and beauty services with experienced stylists.",
-    website: "www.mybusiness.com",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    businessName: "",
+    businessType: "",
+    address: "",
+    description: "",
+    website: "",
     socialMedia: {
-      facebook: "@mybusiness",
-      instagram: "@mybusiness",
-      twitter: "@mybusiness"
+      facebook: "",
+      instagram: "",
+      twitter: ""
     }
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setProfileData({
+            firstName: "",
+            lastName: "",
+            email: data.contact_email || user.email || "",
+            phone: data.contact_phone || "",
+            businessName: data.business_name || "",
+            businessType: data.business_type || "",
+            address: data.business_address || "",
+            description: "",
+            website: "",
+            socialMedia: {
+              facebook: "",
+              instagram: "",
+              twitter: ""
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
 
   const [businessHours, setBusinessHours] = useState({
     monday: { open: "09:00", close: "18:00", closed: false },
@@ -59,16 +105,34 @@ const ProfileManagement = () => {
 
   const { toast } = useToast();
 
-  const handleProfileSave = () => {
-    // Update localStorage
-    localStorage.setItem("userName", `${profileData.firstName} ${profileData.lastName}`);
-    localStorage.setItem("userEmail", profileData.email);
-    localStorage.setItem("businessName", profileData.businessName);
+  const handleProfileSave = async () => {
+    if (!user) return;
 
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been successfully updated.",
-    });
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          contact_email: profileData.email,
+          contact_phone: profileData.phone,
+          business_name: profileData.businessName,
+          business_type: profileData.businessType,
+          business_address: profileData.address,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been successfully updated.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleBusinessHoursSave = () => {
@@ -86,6 +150,10 @@ const ProfileManagement = () => {
   };
 
   const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+  if (loading) {
+    return <div className="text-center py-10">Loading profile...</div>;
+  }
 
   return (
     <div className="space-y-6">

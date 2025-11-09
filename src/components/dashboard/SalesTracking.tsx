@@ -260,23 +260,30 @@ const SalesTracking = () => {
     }
   };
 
-  // Function to export report
+  // Function to export report as CSV
   const exportReport = () => {
-    const reportData = {
-      totalRevenue,
-      totalTransactions,
-      avgTransaction,
-      businessName: localStorage.getItem("businessName") || "Your Business",
-      generatedDate: new Date().toLocaleDateString(),
-      monthlyData,
-      serviceData,
-      recentTransactions
-    };
-
-    const dataStr = JSON.stringify(reportData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    // Create CSV header
+    const headers = ['Date', 'Customer', 'Service', 'Amount', 'Payment Method', 'Status'];
     
-    const exportFileDefaultName = `sales-report-${new Date().toISOString().split('T')[0]}.json`;
+    // Create CSV rows from recent transactions
+    const rows = recentTransactions.map(t => [
+      t.date,
+      t.customer,
+      t.service,
+      `₹${t.amount}`,
+      '-',
+      t.status
+    ]);
+    
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    // Create download link
+    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    const exportFileDefaultName = `sales-report-${new Date().toISOString().split('T')[0]}.csv`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);

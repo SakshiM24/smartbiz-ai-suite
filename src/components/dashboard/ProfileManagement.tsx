@@ -60,8 +60,8 @@ const ProfileManagement = () => {
 
         if (data) {
           setProfileData({
-            firstName: "",
-            lastName: "",
+            firstName: data.first_name || "",
+            lastName: data.last_name || "",
             email: data.contact_email || user.email || "",
             phone: data.contact_phone || "",
             businessName: data.business_name || "",
@@ -112,6 +112,8 @@ const ProfileManagement = () => {
       const { error } = await supabase
         .from('profiles')
         .update({
+          first_name: profileData.firstName,
+          last_name: profileData.lastName,
           contact_email: profileData.email,
           contact_phone: profileData.phone,
           business_name: profileData.businessName,

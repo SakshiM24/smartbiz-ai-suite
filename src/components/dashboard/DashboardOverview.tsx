@@ -52,12 +52,6 @@ const DashboardOverview = () => {
 
   const statsCards = [
     {
-      title: "Total Customers",
-      value: stats.totalCustomers,
-      icon: Users,
-      color: "text-blue-500",
-    },
-    {
       title: "Total Appointments",
       value: stats.totalAppointments,
       icon: Calendar,
@@ -88,7 +82,7 @@ const DashboardOverview = () => {
         <p className="text-muted-foreground">Welcome back! Here's your business summary.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (

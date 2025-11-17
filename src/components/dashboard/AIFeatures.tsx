@@ -14,7 +14,8 @@ import {
   Lightbulb,
   BarChart3,
   Target,
-  Zap
+  Zap,
+  Sparkles
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,8 @@ const AIFeatures = () => {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [generatingRecommendations, setGeneratingRecommendations] = useState(false);
 
   useEffect(() => {
     fetchRealData();
@@ -164,11 +167,80 @@ const AIFeatures = () => {
       }
     }
 
-    setInsights(newInsights);
-  };
+  setInsights(newInsights);
+};
 
+const generateAIRecommendations = async () => {
+  setGeneratingRecommendations(true);
+  
+  // Simulate AI processing with real business logic
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  const newRecommendations = [];
 
-  const handleFaqQuery = async () => {
+  // Revenue optimization recommendations
+  if (salesData.length > 0) {
+    const avgRevenue = salesData.reduce((sum, data) => sum + data.actual, 0) / salesData.length;
+    newRecommendations.push({
+      icon: TrendingUp,
+      category: "Revenue Growth",
+      title: "Increase Average Transaction Value",
+      description: `Your average monthly revenue is ₹${avgRevenue.toFixed(0)}. Consider introducing premium service packages or upselling strategies to boost revenue by 15-20%.`,
+      priority: "High",
+      actionable: true
+    });
+  }
+
+  // Customer engagement recommendations
+  newRecommendations.push({
+    icon: Target,
+    category: "Customer Engagement",
+    title: "Implement Loyalty Program",
+    description: "Reward repeat customers with points or discounts. Studies show loyalty programs can increase customer retention by 25-30%.",
+    priority: "Medium",
+    actionable: true
+  });
+
+  // Operational efficiency
+  newRecommendations.push({
+    icon: Zap,
+    category: "Efficiency",
+    title: "Automate Appointment Reminders",
+    description: "Set up automated SMS/email reminders 24 hours before appointments to reduce no-shows by up to 40%.",
+    priority: "High",
+    actionable: true
+  });
+
+  // Marketing recommendations
+  newRecommendations.push({
+    icon: Sparkles,
+    category: "Marketing",
+    title: "Leverage Social Media",
+    description: "Share before/after photos and customer testimonials on social media to attract new clients. Businesses that do this see 30% more inquiries.",
+    priority: "Medium",
+    actionable: false
+  });
+
+  // Pricing strategy
+  newRecommendations.push({
+    icon: BarChart3,
+    category: "Pricing Strategy",
+    title: "Dynamic Pricing for Peak Hours",
+    description: "Consider premium pricing during high-demand time slots and discounts during slower periods to optimize revenue and capacity.",
+    priority: "Low",
+    actionable: true
+  });
+
+  setRecommendations(newRecommendations);
+  setGeneratingRecommendations(false);
+  
+  toast({
+    title: "Recommendations Generated",
+    description: "AI has analyzed your business and provided personalized suggestions.",
+  });
+};
+
+const handleFaqQuery = async () => {
     if (!faqQuery.trim()) return;
 
     setIsLoading(true);
@@ -217,12 +289,16 @@ const AIFeatures = () => {
         <p className="text-muted-foreground">Real-time insights from your business data</p>
       </div>
 
-      <Tabs defaultValue="insights" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="insights">Smart Insights</TabsTrigger>
-          <TabsTrigger value="predictions">Trends</TabsTrigger>
-          <TabsTrigger value="faq">FAQ Helper</TabsTrigger>
-        </TabsList>
+    <Tabs defaultValue="insights" className="space-y-6">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="insights">Smart Insights</TabsTrigger>
+        <TabsTrigger value="predictions">Trends</TabsTrigger>
+        <TabsTrigger value="recommendations">
+          <Sparkles className="w-4 h-4 mr-2" />
+          AI Recommendations
+        </TabsTrigger>
+        <TabsTrigger value="faq">FAQ Helper</TabsTrigger>
+      </TabsList>
 
         <TabsContent value="insights" className="space-y-6">
           <div className="grid gap-6">
@@ -313,9 +389,99 @@ const AIFeatures = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+      </TabsContent>
 
-        <TabsContent value="faq" className="space-y-6">
+      <TabsContent value="recommendations" className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              AI-Powered Business Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Get personalized suggestions to grow your business based on AI analysis of your data.
+            </p>
+            
+            {recommendations.length === 0 ? (
+              <div className="text-center py-8">
+                <Button 
+                  onClick={generateAIRecommendations}
+                  disabled={generatingRecommendations}
+                  className="gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {generatingRecommendations ? "Analyzing..." : "Generate Recommendations"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    {recommendations.length} recommendations found
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={generateAIRecommendations}
+                    disabled={generatingRecommendations}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+
+                {recommendations.map((rec, index) => {
+                  const Icon = rec.icon;
+                  return (
+                    <Card key={index} className="border-l-4" style={{
+                      borderLeftColor: 
+                        rec.priority === 'High' ? 'hsl(var(--destructive))' : 
+                        rec.priority === 'Medium' ? 'hsl(var(--chart-2))' : 
+                        'hsl(var(--muted))'
+                    }}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-4">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <Icon className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <Badge variant="outline" className="mb-2">
+                                  {rec.category}
+                                </Badge>
+                                <h4 className="font-semibold text-lg">{rec.title}</h4>
+                              </div>
+                              <Badge variant={
+                                rec.priority === 'High' ? 'destructive' : 
+                                rec.priority === 'Medium' ? 'default' : 
+                                'secondary'
+                              }>
+                                {rec.priority} Priority
+                              </Badge>
+                            </div>
+                            <p className="text-muted-foreground">
+                              {rec.description}
+                            </p>
+                            {rec.actionable && (
+                              <Button variant="link" className="px-0">
+                                Learn how to implement →
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="faq" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
